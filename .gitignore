@@ -1,3 +1,5 @@
 .DS_Store
 .idea/
 *.tgz
+# Your values and keys (my-keys.yaml, my-production-values.yaml): never commit.
+my-*.yaml
