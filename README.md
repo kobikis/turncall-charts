@@ -67,7 +67,7 @@ Your keys go in a file of your own:
 
 ```yaml
 # my-keys.yaml
-publicBaseUrl: https://<yours>.ngrok.app   # for phone numbers; see below
+publicBaseUrl: https://<name>.ngrok-free.dev   # ngrok's URL, for phone numbers; see below
 secretEnv:
   OPENAI_API_KEY: sk-...
   DEEPGRAM_API_KEY: ...
