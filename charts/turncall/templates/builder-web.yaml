@@ -1,0 +1,58 @@
+{{- if .Values.builder.enabled }}
+{{- $b := .Values.builder }}
+{{- $name := printf "%s-web" (include "builder.fullname" .) }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+spec:
+  selector:
+    {{- include "builder.selectorLabels" (dict "ctx" . "component" "web") | nindent 4 }}
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "builder.selectorLabels" (dict "ctx" . "component" "web") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "builder.selectorLabels" (dict "ctx" . "component" "web") | nindent 8 }}
+    spec:
+      enableServiceLinks: false
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: web
+          image: {{ include "builder.image" (dict "ctx" . "image" $b.web.image) }}
+          imagePullPolicy: {{ $b.web.image.pullPolicy }}
+          env:
+            # nginx proxies /api here (turncall-builder-web's nginx.conf.template).
+            - name: BUILDER_API_URL
+              value: {{ include "builder.apiUrl" . | quote }}
+          ports:
+            - name: http
+              containerPort: 80
+          readinessProbe:
+            httpGet: {path: /, port: http}
+            periodSeconds: 5
+          {{- with $b.web.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}
