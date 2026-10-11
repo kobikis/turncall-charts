@@ -1,0 +1,41 @@
+{{- if .Values.builder.enabled }}
+# builder-api runs each agent's backend as objects in this namespace (ADR-0025
+# in turncall-builder-api) and nothing else: a Role, never a ClusterRole.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "builder.fullname" . }}-api
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "builder.fullname" . }}-agent-backends
+  namespace: {{ default .Release.Namespace .Values.builder.agentNamespace }}
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps, secrets, services, persistentvolumeclaims]
+    verbs: [get, list, create, patch, delete]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, create, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "builder.fullname" . }}-agent-backends
+  namespace: {{ default .Release.Namespace .Values.builder.agentNamespace }}
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "builder.fullname" . }}-agent-backends
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "builder.fullname" . }}-api
+    namespace: {{ .Release.Namespace }}
+{{- end }}

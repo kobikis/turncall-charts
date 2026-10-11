@@ -1,0 +1,124 @@
+# A production install, as a starting point: your own Postgres (with the
+# `vector` extension) and Redis, S3 for files, an Ingress with TLS, and
+# secrets in Secrets you manage — TurnCall, and the builder beside it (set
+# builder.enabled=false for TurnCall alone). Copy it, replace every
+# example.com and placeholder, and install:
+#
+#   kubectl create secret generic turncall-env \
+#     --from-literal=DATABASE_URL='postgresql+asyncpg://turncall:...@db.example.com:5432/turncall' \
+#     --from-literal=REDIS_URL='rediss://:...@redis.example.com:6379/0' \
+#     --from-literal=PLATFORM_API_KEY='...' \
+#     --from-literal=API_KEY_HASH_SECRET='...' \
+#     --from-literal=CREDENTIAL_ENCRYPTION_KEY='...' \
+#     --from-literal=OPENAI_API_KEY='...' --from-literal=DEEPGRAM_API_KEY='...' \
+#     --from-literal=TWILIO_ACCOUNT_SID='...' --from-literal=TWILIO_AUTH_TOKEN='...'
+#   kubectl -n turncall create secret generic turncall-builder-env \
+#     --from-literal=DATABASE_URL='postgresql://builder:...@db.example.com:5432/builder' \
+#     --from-literal=ANTHROPIC_API_KEY='...' \
+#     --from-literal=BUILDER_SESSION_SECRET='...' \
+#     --from-literal=INTEGRATIONS_ENCRYPTION_KEY='...' \
+#     --from-literal=GOOGLE_CLIENT_ID='...' --from-literal=GOOGLE_CLIENT_SECRET='...'
+#   kubectl create namespace turncall-agents
+#   helm install turncall charts/turncall -n turncall -f my-production-values.yaml
+#
+# API_KEY_HASH_SECRET, CREDENTIAL_ENCRYPTION_KEY and the builder's
+# INTEGRATIONS_ENCRYPTION_KEY: set once, never rotate. The builder reads
+# PLATFORM_API_KEY from turncall-env. The builder's database is created on
+# first start if its user may create databases; otherwise create it yourself.
+
+image:
+  repository: ghcr.io/kobikis/turncall
+  # Pin a release: the drain the grace periods are sized for is in releases
+  # after 2.0.0.
+  tag: "2.0.0"
+# Registry logins for private images — every image here, Agent Backends
+# included: kubectl create secret docker-registry ghcr --docker-server=ghcr.io ...
+imagePullSecrets: []
+  # - name: ghcr
+
+# The host the Ingress below serves. Twilio/Telnyx webhooks and media streams
+# come here; the builder shows it as a number's webhook.
+publicBaseUrl: https://turncall.example.com
+
+# Every secret setting, as environment variables. It must hold DATABASE_URL
+# (the migration Job reads it from there).
+existingSecret: turncall-env
+
+config:
+  STORAGE_BACKEND: s3
+  S3_BUCKET_NAME: turncall-example-recordings
+  AWS_REGION: us-east-1
+  # Credentials for S3 come from the pod's identity (IRSA, workload
+  # identity) or AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY in the Secret.
+  # OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.observability:4318
+
+# Your agents' longest max_call_duration_seconds: it sizes the API's grace
+# period, and a pod is killed at the end of it.
+maxCallDurationSeconds: 3600
+
+api:
+  replicas: 2
+
+# Scale on live calls per pod; needs prometheus-adapter serving
+# turncall_active_calls (docs/guides/kubernetes.mdx, "Autoscaling").
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    # Media streams are WebSockets that last a whole call: at least
+    # maxCallDurationSeconds.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3700"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3700"
+    # cert-manager.io/cluster-issuer: letsencrypt
+  hosts:
+    - host: turncall.example.com
+  tls:
+    - secretName: turncall-tls
+      hosts: [turncall.example.com]
+
+# With prometheus-operator: scrape every API pod's /metrics.
+podMonitor:
+  enabled: false
+
+builder:
+  enabled: true
+  # Your registry's builds, pinned — these repos' CI publishes none. builder-api
+  # must be a build with the Kubernetes runner (after 1.1.0).
+  api:
+    image:
+      repository: registry.example.com/turncall-builder-api
+      tag: "1.2.0"
+  web:
+    image:
+      repository: registry.example.com/turncall-builder-web
+      tag: "1.2.0"
+  agentRuntime:
+    image: registry.example.com/turncall-agent-runtime:1.2.0
+  # Agent Backends run code the Builder generated: keep them, and the Role
+  # builder-api holds over Secrets there, out of TurnCall's namespace.
+  agentNamespace: turncall-agents
+  existingSecret: turncall-builder-env
+  config:
+    # Refuses the dev guest account (scripts.seed_guest).
+    TURNCALL_ENV: production
+    # The console's own URL.
+    PUBLIC_BASE_URL: https://builder.example.com
+    # Google login and Pipedream come back through the console's /api proxy.
+    GOOGLE_REDIRECT_URI: https://builder.example.com/api/auth/google/callback
+    PIPEDREAM_REDIRECT_URI: https://builder.example.com/api/integrations/callback
+    PIPEDREAM_ENVIRONMENT: production
+    AGENT_TIMEZONE: UTC
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      # cert-manager.io/cluster-issuer: letsencrypt
+    host: builder.example.com
+    tls:
+      - secretName: builder-tls
+        hosts: [builder.example.com]

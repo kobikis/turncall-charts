@@ -1,0 +1,30 @@
+{{- if .Values.builder.enabled }}
+{{- range list "AGENT_IMAGE_PULL_SECRETS" "BACKEND_RUNTIME" "AGENT_RUNTIME_IMAGE" "BUILDER_URL" "GENERATED_DIR" "TURNCALL_BASE_URL" "PLATFORM_API_KEY" }}
+{{- if hasKey $.Values.builder.config . }}
+{{- fail (printf "builder: %s is set by the chart, not builder.config" .) }}
+{{- end }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "builder.fullname" . }}
+  labels:
+    {{- include "builder.labels" . | nindent 4 }}
+data:
+  {{- range $key, $value := .Values.builder.config }}
+  {{ $key }}: {{ $value | toString | quote }}
+  {{- end }}
+  BACKEND_RUNTIME: kubernetes
+  AGENT_RUNTIME_IMAGE: {{ .Values.builder.agentRuntime.image | quote }}
+  AGENT_DATA_SIZE: {{ .Values.builder.agentRuntime.dataSize | quote }}
+  AGENT_READY_TIMEOUT_SECONDS: {{ .Values.builder.agentRuntime.readyTimeoutSeconds | quote }}
+  AGENT_IMAGE_PULL_SECRETS: {{ include "builder.pullSecretNames" . | quote }}
+  # Where generated backends ask the builder for tokens and call configs.
+  BUILDER_URL: {{ include "builder.apiUrl" . | quote }}
+  GENERATED_DIR: /generated
+  TURNCALL_BASE_URL: {{ include "builder.turncallUrl" . | quote }}
+  {{- if and .Values.publicBaseUrl (not (hasKey .Values.builder.config "TURNCALL_PUBLIC_URL")) }}
+  # Shown in the console as a number's webhook (TurnCall's PUBLIC_BASE_URL).
+  TURNCALL_PUBLIC_URL: {{ .Values.publicBaseUrl | quote }}
+  {{- end }}
+{{- end }}
