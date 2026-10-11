@@ -3,9 +3,12 @@
 # DATABASE_URL and REDIS_URL at them. README.md; TurnCall's
 # docs/guides/kubernetes.mdx.
 
+# Published by kobikis/turncall: a release tag (2.0.0), or `main` / `sha-<commit>`
+# from its main branch. linux/amd64 only.
 image:
   repository: ghcr.io/kobikis/turncall
-  # Empty = the chart's appVersion. Pin a release.
+  # Empty = the chart's appVersion (`main`). Pin a release or a sha- tag: a
+  # node keeps the first `main` it pulled under IfNotPresent.
   tag: ""
   pullPolicy: IfNotPresent
 
@@ -230,22 +233,26 @@ builder:
   api:
     image:
       repository: ghcr.io/kobikis/turncall-builder-api
-      tag: ""            # empty = appVersion
+      tag: "1.0.0"
       pullPolicy: IfNotPresent
     resources: {}
 
   web:
     image:
       repository: ghcr.io/kobikis/turncall-builder-web
-      tag: ""
+      tag: "1.0.0"
       pullPolicy: IfNotPresent
     resources: {}
 
+  # The builder's images are published by its repos (amd64 + arm64): a release
+  # tag, or `main` / `sha-<commit>`. They are private packages: put a ghcr
+  # login in imagePullSecrets.
+  #
   # The image every Agent Backend runs (turncall-builder-api's
   # agent-runtime/Dockerfile): the scaffold's requirements, each backend's
   # code mounted from a ConfigMap. imagePullSecrets above reach these pods too.
   agentRuntime:
-    image: ghcr.io/kobikis/turncall-agent-runtime:latest
+    image: ghcr.io/kobikis/turncall-agent-runtime:1.0.0
     dataSize: 1Gi
     # How long a build or restart waits for the backend's pod to be ready
     # before the agent reads as failed.

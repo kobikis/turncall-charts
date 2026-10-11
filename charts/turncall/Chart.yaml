@@ -3,10 +3,10 @@ name: turncall
 description: TurnCall voice agent platform - API, eval and campaign workers, optionally Postgres, Redis and the builder
 type: application
 version: 0.2.0
-# The image tag when `image.tag` is empty. Pin `image.tag` to a release: the
-# drain this chart's grace periods are sized for (#199) is in releases after
-# 2.0.0, and an image without it drops live calls on every scale-down.
-appVersion: "latest"
+# TurnCall's image tag when `image.tag` is empty. `main` until TurnCall's next
+# release: 2.0.0 predates the in-cluster call-init the builder's test calls
+# need. Pin `image.tag` in production (a release, or a `sha-<commit>` tag).
+appVersion: "main"
 home: https://github.com/kobikis/turncall-charts
 sources:
   - https://github.com/kobikis/turncall

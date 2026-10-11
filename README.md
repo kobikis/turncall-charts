@@ -12,8 +12,37 @@ One Helm chart, `charts/turncall`, for everything TurnCall runs on Kubernetes:
 
 The code lives in [turncall](https://github.com/kobikis/turncall),
 [turncall-builder-api](https://github.com/kobikis/turncall-builder-api) and
-[turncall-builder-web](https://github.com/kobikis/turncall-builder-web). This
-repo builds no images: each chart value names an image you have.
+[turncall-builder-web](https://github.com/kobikis/turncall-builder-web).
+
+## Published on ghcr.io
+
+| What | Where | Tags |
+|---|---|---|
+| This chart | `oci://ghcr.io/kobikis/charts/turncall` | each release (`v0.2.0` here → `0.2.0`) |
+| TurnCall | `ghcr.io/kobikis/turncall` | releases (`2.0.0`), `main`, `sha-<commit>`; linux/amd64 |
+| builder-api | `ghcr.io/kobikis/turncall-builder-api` | releases (`1.0.0`), `main`, `sha-<commit>`; amd64 + arm64 |
+| Agent Backend runtime | `ghcr.io/kobikis/turncall-agent-runtime` | as builder-api |
+| The console | `ghcr.io/kobikis/turncall-builder-web` | releases, `main`, `sha-<commit>`; amd64 + arm64 |
+
+A release tag in a repo publishes its image (`:1.2.3`, `:1.2`, `:latest`); a
+merge to `main` publishes `:main` and `:sha-<commit>`. The packages are
+private, like the repos: log in to pull the chart, and give the cluster a
+login for the images — a GitHub token with `read:packages`:
+
+```bash
+echo "$TOKEN" | helm registry login ghcr.io --username <github user> --password-stdin
+kubectl -n turncall create secret docker-registry ghcr --docker-server=ghcr.io \
+  --docker-username=<github user> --docker-password="$TOKEN"
+
+helm install turncall oci://ghcr.io/kobikis/charts/turncall --version 0.2.0 -n turncall \
+  --set 'imagePullSecrets[0].name=ghcr' -f my-values.yaml
+```
+
+The chart's defaults pull TurnCall's `main` (its next release will carry the
+in-cluster call-init the builder needs) and the builder's `1.0.0`. Pin
+TurnCall's `image.tag` in production. `values-local.yaml` and
+`values-production.yaml` are in this repo (`helm pull … --untar` has them
+too).
 
 ## On a laptop: everything
 
@@ -22,8 +51,10 @@ repo builds no images: each chart value names an image you have.
 volume, and the builder. Dev secrets, one pod per data store — not for
 production.
 
-It runs local image tags; build them from the three repos, or point each
-`image` at your registry's:
+It runs local image tags, built from the three repos — on Apple Silicon this
+also avoids running TurnCall's amd64-only image emulated. To use the
+published images instead, drop the `image` overrides and add a ghcr login
+(above).
 
 ```bash
 docker build -t turncall:dev ../turncall
@@ -106,3 +137,8 @@ autoscaling on live calls per pod, the single Asterisk edge.
 
 Every commit is signed off (`git commit -s`); CI's `dco` job checks. CI lints
 and renders the chart with every values file.
+
+**Releasing the chart:** bump `version` in `charts/turncall/Chart.yaml` in a
+PR, merge it, then tag that version: `gh release create v0.3.0
+--generate-notes`. The tag publishes the chart; it fails if the tag and
+`Chart.yaml` disagree.
