@@ -81,13 +81,19 @@ helm install turncall charts/turncall -n turncall --create-namespace \
   -f charts/turncall/values-local.yaml -f my-keys.yaml
 
 kubectl -n turncall exec deploy/turncall-builder-api -- python -m scripts.seed_guest
-kubectl -n turncall port-forward svc/turncall-builder-web 5173:80   # http://localhost:5173, guest@turncall.local / guest
 ```
 
+- **Where it is:** on Docker Desktop, `values-local.yaml` makes both Services
+  `LoadBalancer`s, which Docker Desktop serves on localhost: the API at
+  http://localhost:8090 and the console at http://localhost:5173 (log in as
+  `guest@turncall.local` / `guest`). On kind or minikube they get no address —
+  `kubectl -n turncall port-forward svc/turncall 8090:8090` and `svc/turncall-builder-web 5173:5173`.
 - **Phone numbers** need `publicBaseUrl`: a public https URL that reaches
-  TurnCall's API. On a laptop, `kubectl -n turncall port-forward svc/turncall
-  8090:80` with `ngrok http 8090` in front. Without it a number is saved but
-  not configured at Twilio/Telnyx.
+  TurnCall's API — `ngrok http 8090` on a laptop. Because the Service, not a
+  port-forward, holds port 8090, the tunnel keeps working when the API pod is
+  replaced; a port-forward stays stuck on the old pod, and Twilio gets a 503
+  (error 11200) until it is restarted. Without `publicBaseUrl` a number is
+  saved but not configured at Twilio/Telnyx.
 - **Changing values or the chart:** `helm upgrade turncall charts/turncall -n
   turncall --reset-then-reuse-values` (the chart's current defaults plus what
   you installed with). `--reuse-values` alone keeps the old defaults too.

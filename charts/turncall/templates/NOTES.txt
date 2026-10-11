@@ -1,7 +1,13 @@
 TurnCall API: service {{ include "turncall.fullname" . }}, port {{ .Values.api.service.port }}.
+{{- if eq .Values.api.service.type "LoadBalancer" }}
+
+  curl localhost:{{ .Values.api.service.port }}/health     # Docker Desktop serves the LoadBalancer on localhost
+  # kind / minikube: kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "turncall.fullname" . }} {{ .Values.api.service.port }}:{{ .Values.api.service.port }}
+{{- else }}
 
   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "turncall.fullname" . }} 8090:{{ .Values.api.service.port }}
   curl localhost:8090/health
+{{- end }}
 
 API pods drain live calls on SIGTERM for up to {{ add .Values.api.preStopSeconds .Values.maxCallDurationSeconds 90 }}s
 (maxCallDurationSeconds={{ .Values.maxCallDurationSeconds }}): keep that at least your agents' longest
@@ -25,8 +31,12 @@ STORAGE_BACKEND is local: each pod has its own files. Use s3 with more than one 
 The builder's console (log in as guest@turncall.local / guest after seeding it, outside production):
 
   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "builder.fullname" . }}-api -- python -m scripts.seed_guest
-  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "builder.fullname" . }}-web 5173:80
+  {{- if eq .Values.builder.web.service.type "LoadBalancer" }}
+  open http://localhost:{{ .Values.builder.web.service.port }}     # Docker Desktop; elsewhere port-forward svc/{{ include "builder.fullname" . }}-web
+  {{- else }}
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "builder.fullname" . }}-web 5173:{{ .Values.builder.web.service.port }}
   open http://localhost:5173
+  {{- end }}
 
 Agent Backends run as Deployments named for their agent, in this namespace:
 

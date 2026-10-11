@@ -243,6 +243,9 @@ builder:
       tag: "1.0.0"
       pullPolicy: IfNotPresent
     resources: {}
+    service:
+      type: ClusterIP
+      port: 80
 
   # The builder's images are published by its repos (amd64 + arm64): a release
   # tag, or `main` / `sha-<commit>`. They are private packages: put a ghcr

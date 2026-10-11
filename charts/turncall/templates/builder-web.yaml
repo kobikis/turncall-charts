@@ -8,11 +8,12 @@ metadata:
   labels:
     {{- include "builder.labels" . | nindent 4 }}
 spec:
+  type: {{ $b.web.service.type }}
   selector:
     {{- include "builder.selectorLabels" (dict "ctx" . "component" "web") | nindent 4 }}
   ports:
     - name: http
-      port: 80
+      port: {{ $b.web.service.port }}
       targetPort: http
 ---
 apiVersion: apps/v1

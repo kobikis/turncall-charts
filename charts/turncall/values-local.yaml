@@ -28,9 +28,8 @@ localStorage:
 config:
   STORAGE_BACKEND: local
 
-# Twilio/Telnyx need a public https URL that reaches this API (ngrok to
-# `kubectl port-forward svc/turncall 8090:80` is enough on a laptop). Without
-# it, binding a number saves it unconfigured.
+# Twilio/Telnyx need a public https URL that reaches this API: `ngrok http
+# 8090` on a laptop. Without it, binding a number saves it unconfigured.
 publicBaseUrl: ""   # e.g. https://<name>.ngrok-free.dev — set it in your keys file
 
 # Dev values. Provider keys go here too (OPENAI_API_KEY, DEEPGRAM_API_KEY,
@@ -44,6 +43,14 @@ secretEnv:
 
 api:
   replicas: 1
+  # Docker Desktop's Kubernetes serves a LoadBalancer Service on localhost, so
+  # the API is http://localhost:8090 for good — ngrok in front of it keeps
+  # working across pod restarts, where a port-forward stays stuck on the pod
+  # it started with (and Twilio gets a 503). On kind or minikube the Service
+  # gets no address: `kubectl port-forward svc/turncall 8090:8090` instead.
+  service:
+    type: LoadBalancer
+    port: 8090
   # Room for the rest on a laptop; the production request is a whole core.
   resources:
     requests:
@@ -61,6 +68,8 @@ builder:
     image: {repository: turncall-builder-api, tag: dev, pullPolicy: Always}
   web:
     image: {repository: turncall-builder-web, tag: dev, pullPolicy: Always}
+    # http://localhost:5173 on Docker Desktop, as the API above.
+    service: {type: LoadBalancer, port: 5173}
   agentRuntime:
     image: turncall-agent-runtime:dev
   config:
