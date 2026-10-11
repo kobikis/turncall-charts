@@ -45,9 +45,18 @@ spec:
         - name: migrate
           image: {{ include "turncall.image" (dict "ctx" .) }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # ponytail: retries forever, so the database coming up is waited
-          # for; a migration that fails for real loops too — read its logs.
-          command: ["sh", "-c", "until alembic upgrade head; do sleep 3; done"]
+          # Retries until it works, so the database coming up is waited for.
+          # A failed attempt prints its last line, not its whole traceback:
+          # "Connection refused" while Postgres starts is expected, not an
+          # error. A migration that fails for real keeps printing its reason.
+          command:
+            - sh
+            - -c
+            - |
+              until alembic upgrade head > /tmp/migrate.log 2>&1; do
+                echo "migration not done yet: $(tail -n 1 /tmp/migrate.log)"; sleep 3
+              done
+              cat /tmp/migrate.log
           {{- include "turncall.env" . | nindent 10 }}
       {{- end }}
       {{- if .Values.localStorage.enabled }}
