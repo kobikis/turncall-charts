@@ -17,8 +17,30 @@ imagePullSecrets: []
 # The public https URL carriers reach this API at (PUBLIC_BASE_URL): Twilio and
 # Telnyx webhooks, media streams, transfer callbacks. Without it a number
 # cannot be configured on bind. The builder shows it as a number's webhook.
-# config.PUBLIC_BASE_URL wins when both are set.
+# config.PUBLIC_BASE_URL wins when both are set; empty with tunnel.enabled, it
+# is the tunnel's domain.
 publicBaseUrl: ""
+
+# An ngrok tunnel to TurnCall's API, run in the cluster: a public https URL
+# for carriers wherever the cluster is (a laptop, minikube, a dev cluster on
+# EKS) without an Ingress or a LoadBalancer. It forwards to TurnCall's Service,
+# so it keeps working when the API pods are replaced — a `kubectl
+# port-forward` behind ngrok does not, and Twilio drops calls (error 11200)
+# until it is restarted. With a domain set and publicBaseUrl empty, the
+# domain becomes the public URL. In production use the Ingress instead.
+#
+# ngrok allows one agent per domain: stop any ngrok running elsewhere with it.
+tunnel:
+  enabled: false
+  image: ngrok/ngrok:3
+  # Your ngrok account's domain, e.g. <name>.ngrok-free.dev (a free account
+  # gets one, fixed).
+  domain: ""
+  # Your ngrok authtoken (dashboard.ngrok.com > Your Authtoken), stored in a
+  # Secret the chart owns — or existingSecret naming one with NGROK_AUTHTOKEN.
+  authtoken: ""
+  existingSecret: ""
+  resources: {}
 
 # The prefix of every object's name, instead of <release>-turncall (or the
 # release name when it contains "turncall").

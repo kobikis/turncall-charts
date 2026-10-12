@@ -168,3 +168,12 @@ app.kubernetes.io/component: {{ .component }}
 {{- range .Values.imagePullSecrets }}{{ $names = append $names .name }}{{ end -}}
 {{- join "," $names -}}
 {{- end -}}
+
+{{/* The public URL: publicBaseUrl, else the in-cluster tunnel's domain. */}}
+{{- define "turncall.publicBaseUrl" -}}
+{{- if .Values.publicBaseUrl -}}
+{{- .Values.publicBaseUrl -}}
+{{- else if and .Values.tunnel.enabled .Values.tunnel.domain -}}
+{{- printf "https://%s" (.Values.tunnel.domain | trimPrefix "https://" | trimSuffix "/") -}}
+{{- end -}}
+{{- end -}}

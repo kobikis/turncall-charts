@@ -1,0 +1,64 @@
+{{- if .Values.tunnel.enabled }}
+{{- if not .Values.tunnel.domain }}
+{{- fail "tunnel.enabled needs tunnel.domain: your ngrok domain, e.g. <name>.ngrok-free.dev" }}
+{{- end }}
+{{- if not (or .Values.tunnel.authtoken .Values.tunnel.existingSecret) }}
+{{- fail "tunnel.enabled needs tunnel.authtoken, or tunnel.existingSecret naming a Secret with NGROK_AUTHTOKEN" }}
+{{- end }}
+{{- $name := printf "%s-tunnel" (include "turncall.fullname" .) }}
+{{- if not .Values.tunnel.existingSecret }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "turncall.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  NGROK_AUTHTOKEN: {{ .Values.tunnel.authtoken | quote }}
+---
+{{- end }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "turncall.labels" . | nindent 4 }}
+    app.kubernetes.io/component: tunnel
+spec:
+  # One agent: ngrok allows one per domain. Recreate, so a rollout never runs
+  # two and has the new one refused.
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "turncall.selectorLabels" (dict "ctx" . "component" "tunnel") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "turncall.selectorLabels" (dict "ctx" . "component" "tunnel") | nindent 8 }}
+      annotations:
+        checksum/secret: {{ .Values.tunnel.authtoken | sha256sum }}
+    spec:
+      enableServiceLinks: false
+      containers:
+        - name: ngrok
+          image: {{ .Values.tunnel.image }}
+          args:
+            - http
+            - --url=https://{{ .Values.tunnel.domain | trimPrefix "https://" | trimSuffix "/" }}
+            - --log=stdout
+            # TurnCall's Service, not a pod: a replaced API pod is just a new endpoint.
+            - http://{{ include "turncall.fullname" . }}:{{ .Values.api.service.port }}
+          env:
+            - name: NGROK_AUTHTOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default $name .Values.tunnel.existingSecret }}
+                  key: NGROK_AUTHTOKEN
+          {{- with .Values.tunnel.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+{{- end }}

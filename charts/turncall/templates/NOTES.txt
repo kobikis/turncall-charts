@@ -6,9 +6,14 @@ TurnCall API: service {{ include "turncall.fullname" . }}, port {{ .Values.api.s
 API pods drain live calls on SIGTERM for up to {{ add .Values.api.preStopSeconds .Values.maxCallDurationSeconds 90 }}s
 (maxCallDurationSeconds={{ .Values.maxCallDurationSeconds }}): keep that at least your agents' longest
 max_call_duration_seconds.
-{{- if not (or .Values.config.PUBLIC_BASE_URL .Values.publicBaseUrl) }}
+{{- if .Values.tunnel.enabled }}
 
-No public URL (publicBaseUrl): a phone number bound now is saved but not configured at
+Carriers reach TurnCall at {{ include "turncall.publicBaseUrl" . }} through the in-cluster ngrok tunnel
+(deployment {{ include "turncall.fullname" . }}-tunnel). It follows the Service, so pod restarts do not break it.
+{{- end }}
+{{- if not (or .Values.config.PUBLIC_BASE_URL (include "turncall.publicBaseUrl" .)) }}
+
+No public URL (publicBaseUrl, or tunnel.enabled with tunnel.domain): a phone number bound now is saved but not configured at
 Twilio/Telnyx. Set it to an https URL that reaches this API, then re-save the number.
 {{- end }}
 {{- if not .Values.asteriskEdge.enabled }}

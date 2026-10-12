@@ -28,10 +28,12 @@ localStorage:
 config:
   STORAGE_BACKEND: local
 
-# Twilio/Telnyx need a public https URL that reaches this API (ngrok to
-# `kubectl port-forward svc/turncall 8090:80` is enough on a laptop). Without
-# it, binding a number saves it unconfigured.
-publicBaseUrl: ""   # e.g. https://<name>.ngrok-free.dev — set it in your keys file
+# Phone calls need a public https URL that reaches this API: turn on the
+# in-cluster ngrok tunnel in your keys file —
+#   tunnel: {enabled: true, domain: <name>.ngrok-free.dev, authtoken: ...}
+# — and that domain becomes publicBaseUrl. Without one, binding a number saves
+# it unconfigured.
+publicBaseUrl: ""
 
 # Dev values. Provider keys go here too (OPENAI_API_KEY, DEEPGRAM_API_KEY,
 # TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, ...) — keep them in a file of your

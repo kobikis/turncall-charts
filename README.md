@@ -67,13 +67,16 @@ Your keys go in a file of your own:
 
 ```yaml
 # my-keys.yaml
-publicBaseUrl: https://<name>.ngrok-free.dev   # ngrok's URL, for phone numbers; see below
 secretEnv:
   OPENAI_API_KEY: sk-...
   DEEPGRAM_API_KEY: ...
 builder:
   secretEnv:
     ANTHROPIC_API_KEY: sk-ant-...
+tunnel:                       # for phone calls; see below
+  enabled: true
+  domain: <name>.ngrok-free.dev
+  authtoken: ...              # dashboard.ngrok.com > Your Authtoken
 ```
 
 ```bash
@@ -84,10 +87,19 @@ kubectl -n turncall exec deploy/turncall-builder-api -- python -m scripts.seed_g
 kubectl -n turncall port-forward svc/turncall-builder-web 5173:80   # http://localhost:5173, guest@turncall.local / guest
 ```
 
-- **Phone numbers** need `publicBaseUrl`: a public https URL that reaches
-  TurnCall's API. On a laptop, `kubectl -n turncall port-forward svc/turncall
-  8090:80` with `ngrok http 8090` in front. Without it a number is saved but
-  not configured at Twilio/Telnyx.
+- **Phone numbers** need a public https URL that reaches TurnCall's API.
+  `tunnel` runs an ngrok agent in the cluster that forwards your ngrok domain
+  to TurnCall's Service, and that domain becomes `publicBaseUrl`. It works the
+  same on Docker Desktop, minikube or a dev cluster on EKS, and keeps working
+  when the API pods are replaced — a `kubectl port-forward` behind a laptop
+  ngrok stays on the pod it started with, so Twilio got a 503 (error 11200)
+  after every restart. A free ngrok account gets one fixed domain
+  (`<name>.ngrok-free.dev`); ngrok allows one agent per domain, so stop any
+  other ngrok using it. Without a public URL a number is saved but not
+  configured at Twilio/Telnyx. In production, use the Ingress and
+  `publicBaseUrl` instead.
+- **The API itself**, for curl or scripts: `kubectl -n turncall port-forward
+  svc/turncall 8090:80`.
 - **Changing values or the chart:** `helm upgrade turncall charts/turncall -n
   turncall --reset-then-reuse-values` (the chart's current defaults plus what
   you installed with). `--reuse-values` alone keeps the old defaults too.

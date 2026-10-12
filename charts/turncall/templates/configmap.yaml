@@ -13,7 +13,7 @@ data:
   {{- range $key, $value := .Values.config }}
   {{ $key }}: {{ $value | toString | quote }}
   {{- end }}
-  {{- with .Values.publicBaseUrl }}
+  {{- with include "turncall.publicBaseUrl" . }}
   {{- if not (hasKey $.Values.config "PUBLIC_BASE_URL") }}
   PUBLIC_BASE_URL: {{ . | quote }}
   {{- end }}

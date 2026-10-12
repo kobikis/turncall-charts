@@ -28,3 +28,7 @@ builder:
   ingress:
     enabled: true
     className: nginx
+tunnel:
+  enabled: true
+  domain: example.ngrok-free.dev
+  existingSecret: ngrok-env

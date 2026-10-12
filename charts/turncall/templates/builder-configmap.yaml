@@ -23,8 +23,8 @@ data:
   BUILDER_URL: {{ include "builder.apiUrl" . | quote }}
   GENERATED_DIR: /generated
   TURNCALL_BASE_URL: {{ include "builder.turncallUrl" . | quote }}
-  {{- if and .Values.publicBaseUrl (not (hasKey .Values.builder.config "TURNCALL_PUBLIC_URL")) }}
+  {{- if and (include "turncall.publicBaseUrl" .) (not (hasKey .Values.builder.config "TURNCALL_PUBLIC_URL")) }}
   # Shown in the console as a number's webhook (TurnCall's PUBLIC_BASE_URL).
-  TURNCALL_PUBLIC_URL: {{ .Values.publicBaseUrl | quote }}
+  TURNCALL_PUBLIC_URL: {{ include "turncall.publicBaseUrl" . | quote }}
   {{- end }}
 {{- end }}
