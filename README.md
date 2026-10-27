@@ -19,7 +19,7 @@ The code lives in [turncall](https://github.com/kobikis/turncall),
 | What | Where | Tags |
 |---|---|---|
 | This chart | `oci://ghcr.io/kobikis/charts/turncall` | each release (`v0.2.0` here → `0.2.0`) |
-| TurnCall | `ghcr.io/kobikis/turncall` | releases (`2.0.0`), `main`, `sha-<commit>`; linux/amd64 |
+| TurnCall | `ghcr.io/kobikis/turncall` | releases (`2.1.0`), `main`, `sha-<commit>`; linux/amd64 |
 | builder-api | `ghcr.io/kobikis/turncall-builder-api` | releases (`1.0.0`), `main`, `sha-<commit>`; amd64 + arm64 |
 | Agent Backend runtime | `ghcr.io/kobikis/turncall-agent-runtime` | as builder-api |
 | The console | `ghcr.io/kobikis/turncall-builder-web` | releases, `main`, `sha-<commit>`; amd64 + arm64 |
@@ -38,7 +38,7 @@ helm install turncall oci://ghcr.io/kobikis/charts/turncall --version 0.2.0 -n t
   --set 'imagePullSecrets[0].name=ghcr' -f my-values.yaml
 ```
 
-The chart's defaults pull TurnCall's `main` (its next release will carry the
+The chart's defaults pull TurnCall's `2.1.0` (the first release with the
 in-cluster call-init the builder needs) and the builder's `1.0.0`. Pin
 TurnCall's `image.tag` in production. `values-local.yaml` and
 `values-production.yaml` are in this repo (`helm pull … --untar` has them

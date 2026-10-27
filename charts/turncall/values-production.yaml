@@ -28,10 +28,10 @@
 
 image:
   repository: ghcr.io/kobikis/turncall
-  # Pin it. The builder's in-cluster call-init and the drain these grace
-  # periods are sized for are newer than 2.0.0: until TurnCall's next release,
-  # a `sha-<commit>` tag from its main branch.
-  tag: "sha-8b32c76"
+  # Pin it: a release, or a `sha-<commit>` tag from TurnCall's main branch.
+  # 2.1.0 is the first release with the builder's in-cluster call-init and the
+  # drain these grace periods are sized for.
+  tag: "2.1.0"
 # The images on ghcr.io are private packages. A login for them — a token
 # with read:packages — reaches every pod here, Agent Backends included:
 #   kubectl -n turncall create secret docker-registry ghcr --docker-server=ghcr.io \

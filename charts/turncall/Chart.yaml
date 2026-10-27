@@ -2,11 +2,11 @@ apiVersion: v2
 name: turncall
 description: TurnCall voice agent platform - API, eval and campaign workers, optionally Postgres, Redis and the builder
 type: application
-version: 0.2.0
-# TurnCall's image tag when `image.tag` is empty. `main` until TurnCall's next
-# release: 2.0.0 predates the in-cluster call-init the builder's test calls
-# need. Pin `image.tag` in production (a release, or a `sha-<commit>` tag).
-appVersion: "main"
+version: 0.3.0
+# TurnCall's image tag when `image.tag` is empty: its 2.1.0 release, the first
+# with the in-cluster call-init the builder's test calls need. Pin `image.tag`
+# in production (a release, or a `sha-<commit>` tag).
+appVersion: "2.1.0"
 home: https://github.com/kobikis/turncall-charts
 sources:
   - https://github.com/kobikis/turncall
