@@ -3,12 +3,13 @@
 # DATABASE_URL and REDIS_URL at them. README.md; TurnCall's
 # docs/guides/kubernetes.mdx.
 
-# Published by kobikis/turncall: a release tag (2.0.0), or `main` / `sha-<commit>`
+# Published by kobikis/turncall: a release tag (2.1.0), or `main` / `sha-<commit>`
 # from its main branch. linux/amd64 only.
 image:
   repository: ghcr.io/kobikis/turncall
-  # Empty = the chart's appVersion (`main`). Pin a release or a sha- tag: a
-  # node keeps the first `main` it pulled under IfNotPresent.
+  # Empty = the chart's appVersion (`2.1.0`). Pin a release or a sha- tag
+  # rather than `main`: a node keeps the first `main` it pulled under
+  # IfNotPresent.
   tag: ""
   pullPolicy: IfNotPresent
 
